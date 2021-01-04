@@ -8,6 +8,7 @@ import "C"
 
 import (
 	"unsafe"
+
 	"github.com/ziutek/glib"
 )
 
@@ -41,7 +42,7 @@ const (
 	MESSAGE_STEP_START       = MessageType(C.GST_MESSAGE_STEP_START)
 	MESSAGE_QOS              = MessageType(C.GST_MESSAGE_QOS)
 	//MESSAGE_PROGRESS         = MessageType(C.GST_MESSAGE_PROGRESS)
-	MESSAGE_ANY              = MessageType(C.GST_MESSAGE_ANY)
+	MESSAGE_ANY = MessageType(C.GST_MESSAGE_ANY)
 )
 
 func (t MessageType) String() string {
@@ -136,6 +137,14 @@ func (m *Message) GetStructure() (string, glib.Params) {
 	return parseGstStructure(s)
 }
 
+func (m *Message) GetValueFromStructure(param string) GValueArray {
+	s := C.gst_message_get_structure(m.g())
+	if s == nil {
+		return nil
+	}
+	return getValueFromStructure(s, param)
+}
+
 func (m *Message) GetSrc() *GstObj {
 	src := new(GstObj)
 	src.SetPtr(glib.Pointer(m.src))
@@ -144,7 +153,7 @@ func (m *Message) GetSrc() *GstObj {
 
 func (m *Message) ParseError() (err *glib.Error, debug string) {
 	var d *C.gchar
-	var	e, ret_e *C.GError
+	var e, ret_e *C.GError
 
 	C.gst_message_parse_error(m.g(), &e, &d)
 	defer C.g_error_free(e)
@@ -155,4 +164,18 @@ func (m *Message) ParseError() (err *glib.Error, debug string) {
 	*ret_e = *e
 	err = (*glib.Error)(unsafe.Pointer(ret_e))
 	return
+}
+
+func (m *Message) ParseStateChanged() (oldState, newState, pending string) {
+	var o, n, p C.GstState
+	C.gst_message_parse_state_changed(m.g(), &o, &n, &p)
+	return stateToString(o), stateToString(n), stateToString(p)
+}
+
+func stateToString(s C.GstState) string {
+	return fromGStr(C.gst_element_state_get_name(s))
+}
+
+func fromGStr(s *C.gchar) string {
+	return C.GoString((*C.char)(unsafe.Pointer(s)))
 }
