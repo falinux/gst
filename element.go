@@ -7,8 +7,9 @@ package gst
 import "C"
 
 import (
-	"github.com/ziutek/glib"
 	"unsafe"
+
+	"github.com/ziutek/glib"
 )
 
 type State C.GstState
@@ -115,6 +116,10 @@ func (e *Element) AddPad(p *Pad) bool {
 	return C.gst_element_add_pad(e.g(), p.g()) != 0
 }
 
+func (e *Element) AddGhostPad(p *GhostPad) bool {
+	return C.gst_element_add_pad(e.g(), (*C.GstPad)(p.GetPtr())) != 0
+}
+
 func (e *Element) GetRequestPad(name string) *Pad {
 	s := (*C.gchar)(C.CString(name))
 	defer C.free(unsafe.Pointer(s))
@@ -147,6 +152,10 @@ func (e *Element) GetBus() *Bus {
 	b := new(Bus)
 	b.SetPtr(glib.Pointer(bus))
 	return b
+}
+
+func (e *Element) SendEvent(event *Event) bool {
+	return C.gst_element_send_event(e.g(), (*C.GstEvent)(event.GstEvent)) != 0
 }
 
 // TODO: Move ElementFactoryMake to element_factory.go
