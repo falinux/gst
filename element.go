@@ -162,8 +162,11 @@ func (e *Element) SendEvent(event *Event) bool {
 func ElementFactoryMake(factory_name, name string) *Element {
 	fn := (*C.gchar)(C.CString(factory_name))
 	defer C.free(unsafe.Pointer(fn))
-	n := (*C.gchar)(C.CString(name))
-	defer C.free(unsafe.Pointer(n))
+	var n *C.gchar = nil
+	if name != "" {
+		n = (*C.gchar)(C.CString(name))
+		defer C.free(unsafe.Pointer(n))
+	}
 	ge := C.gst_element_factory_make(fn, n)
 	if ge == nil {
 		return nil
